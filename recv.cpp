@@ -40,12 +40,21 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    is unique system-wide among all System V objects. Two objects, on the other hand,
 		    may have the same key.
 	 */
-	
+	message msge = new message;
+	key_t key;
+	key = ftok("keyfile.txt", 'a'); //Generate the key
 
 	
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
+	int shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+
 	/* TODO: Attach to the shared memory */
+	sharedMemPtr = (char*)shmat(shmid, (void*)0, 0);
+
 	/* TODO: Create a message queue */
+	int msgid = msgget(key, 0666|IPC_CREAT); //Creates a message queue
+	msge.mtype = 1;					 //and returns identifier
+
 	/* Store the IDs and the pointer to the shared memory region in the corresponding parameters */
 	
 }

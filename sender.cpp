@@ -31,19 +31,21 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    and the shared memory segment. This also serves to illustrate the difference
 		    between the key and the id used in message queues and shared memory. The id
 		    for any System V objest (i.e. message queues, shared memory, and sempahores)
-		    is unique system-wide among all SYstem V objects. Two objects, on the other hand,
+		    is unique system-wide among all System V objects. Two objects, on the other hand,
 		    may have the same key.
 	 */
 	message msge = new message;
-  msge.size = ftok("keyfile.txt", 'a'); /*Generate the key*/
+	key_t key = ftok("keyfile.txt", 'a'); /*Generate the key*/
 
 
 	/* TODO: Get the id of the shared memory segment. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE */
-	int shmid = shmget(msge, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+	int shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+
 	/* TODO: Attach to the shared memory */
-  sharedMemPtr = (char*) shmat(shmid,(void*)0,0);
+     sharedMemPtr = (char*) shmat(shmid, (void*)0, 0);
+
 	/* TODO: Attach to the message queue */
-	//msgsnd(shmid, ) --Still trying to figure out what values to pass to the function 
+
 	/* Store the IDs and the pointer to the shared memory region in the corresponding parameters */
 
 
