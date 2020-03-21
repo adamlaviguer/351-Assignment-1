@@ -15,6 +15,10 @@ int shmid, msqid;
 /* The pointer to the shared memory */
 void* sharedMemPtr;
 
+message recMsge = new message;
+message sendMsge = new message;
+
+
 /**
  * Sets up the shared memory segment and message queue
  * @param shmid - the id of the allocated shared memory
@@ -34,17 +38,49 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    is unique system-wide among all System V objects. Two objects, on the other hand,
 		    may have the same key.
 	 */
-	message msge = new message;
+	printf("Generating the key");
 	key_t key = ftok("keyfile.txt", 'a'); /*Generate the key*/
+	if (key == -1) {
+		perror("Could not generate key");
+		exit(1);
+	}
+	else {
+		printf("Key has been generated successfully");
+	}
 
 
 	/* TODO: Get the id of the shared memory segment. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE */
+	printf("Memory is being allocated");
 	int shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+	if (shmid == -1) {
+		perror("Could not allocate memory");
+		exit(1);
+	}
+	else {
+		printf("Memory has been allocated successfully");
+	}
 
 	/* TODO: Attach to the shared memory */
      sharedMemPtr = (char*) shmat(shmid, (void*)0, 0);
+	printf("In the process of attaching to shared memory");
+	if (sharedMemPtr == (void *)-1) {
+		perror("Could not attach to shared memory");
+		exit(1);
+	}
+	else {
+		printf("Attached to shared memory successfully");
+	}
 
 	/* TODO: Attach to the message queue */
+	int msgid = msgget(key, 0666 | IPC_CREAT); //Creates a message queue
+	printf("Message queue is being created");
+	if (msgid == -1) {
+		perror("Message queue could not be created");
+		exit(1);
+	}
+	else {
+		printf("Message queue was created successfully");
+	}
 
 	/* Store the IDs and the pointer to the shared memory region in the corresponding parameters */
 
@@ -61,6 +97,15 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 {
 	/* TODO: Detach from shared memory */
+	printf("Going to detach from shared memory");
+
+	if (shmdt(sharedMemPtr) == -1) {
+		perror("There was an error detaching from memory in cleanUp");
+		exit(1);
+	}
+	else {
+		printf("Detached from shared memory");
+	}
 }
 
 /**
@@ -103,10 +148,27 @@ void send(const char* fileName)
 		/* TODO: Send a message to the receiver telling him that the data is ready
  		 * (message of type SENDER_DATA_TYPE)
  		 */
+		sendMsge.mtype = SENDER_DATA_TYPE;
+		printf("Sending the message");
+		
+		int sendMsg = msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0);
+		if (sendMsg == -1) {
+			perror("Error sending the message in void send");
+		}
+		else {
+			printf("The message was sent successfully");
+		}
 
 		/* TODO: Wait until the receiver sends us a message of type RECV_DONE_TYPE telling us
  		 * that he finished saving the memory chunk.
  		 */
+		if (msgrcv(msqid, &rcvMsg, 0, RECV_DONE_TYPE, 0)) {
+			perror("Could not retrieve message from reciever of type RECV_DONE_TYPE");
+		}
+		else {
+			printf("Message was retrieved from reciever successfully");
+		}
+
 	}
 
 
@@ -114,10 +176,21 @@ void send(const char* fileName)
  	  * Lets tell the receiver that we have nothing more to send. We will do this by
  	  * sending a message of type SENDER_DATA_TYPE with size field set to 0.
 	  */
+	sendMsge.size = 0;
+	sendMsge.mtype = SENDER_DATA_TYPE;
 
+	printf("Sending an empty message");
+	int sendMesg = msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0);
+	if (sendMesg == -1) {
+		perror("There was an error sending the empty message");
+	}
+	else {
+		printf("The empty message was sent successfully");
+	}
 
 	/* Close the file */
 	fclose(fp);
+	printf("The file has successfully been closed");
 
 }
 
