@@ -19,6 +19,8 @@ void *sharedMemPtr;
 /* The name of the received file */
 const char recvFileName[] = "recvfile";
 
+message recMsge = new message;
+message sendMsge = new message;
 
 /**
  * Sets up the shared memory segment and message queue
@@ -40,20 +42,51 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    is unique system-wide among all System V objects. Two objects, on the other hand,
 		    may have the same key.
 	 */
-	message msge = new message;
+	
 	key_t key;
 	key = ftok("keyfile.txt", 'a'); //Generate the key
+	printf("Generating key")
+	if (key == -1) {
+		perror("Could not generate key");
+		exit(1);
+	}
+	else {
+		printf("Key has been generated successfully");
+	}
 
 	
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
+	printf("Memory is being allocated");
 	int shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+	if (shmid == -1) {
+		perror("Could not allocate memory");
+		exit(1);
+	}
+	else {
+		printf("Memory has been allocated successfully");
+	}
 
 	/* TODO: Attach to the shared memory */
 	sharedMemPtr = (char*)shmat(shmid, (void*)0, 0);
+	printf("In the process of attaching to shared memory");
+	if (sharedMemPtr == (void *)-1) {
+		perror("Could not attach to shared memory");
+		exit(1);
+	}
+	else {
+		printf("Attached to shared memory successfully");
+	}
 
 	/* TODO: Create a message queue */
 	int msgid = msgget(key, 0666|IPC_CREAT); //Creates a message queue
-	msge.mtype = 1;					 //and returns identifier
+	printf("Message queue is being created");
+	if (msgid == -1) {
+		perror("Message queue could not be created");
+		exit(1);
+	}
+	else {
+		printf("Message queue was created successfully");
+	}
 
 	/* Store the IDs and the pointer to the shared memory region in the corresponding parameters */
 	
@@ -72,10 +105,12 @@ void mainLoop()
 	FILE* fp = fopen(recvFileName, "w");
 		
 	/* Error checks */
-	if(!fp)
-	{
+	if(!fp){
 		perror("fopen");	
 		exit(-1);
+	}
+	else {
+		printf("File has been opened successfully. Standing by for message.\n")
 	}
 		
     /* TODO: Receive the message and get the message size. The message will 
@@ -93,8 +128,22 @@ void mainLoop()
  	 * there is no more data to send
  	 */	
 
+	msgSize++;
+
 	while(msgSize != 0)
 	{	
+		printf("A new message is currently being read");
+		int recieveMsg = msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
+		if (recieveMsg == -1) {
+			perror("There was an error retrieving the message");
+			exit(1);
+		}
+		else {
+			printf("Successfully read in the message");
+		}
+
+		msgSize = recMsge.size;
+
 		/* If the sender is not telling us that we are done, then get to work */
 		if(msgSize != 0)
 		{
@@ -108,12 +157,26 @@ void mainLoop()
  			 * I.e. send a message of type RECV_DONE_TYPE (the value of size field
  			 * does not matter in this case). 
  			 */
+			printf("Prepared to recieve the next chunk\n");
+
+			sendMsge.mtype = RECV_DONE_TYPE;
+			sendMsge.size = 0;
+
+			printf("Going to send the empty message back");
+			int messageSnd = msgsnd(msqid, &sndMsg, 0, 0);
+			if (messageSnd == -1) {
+				perror("There was an error in sending the empty message");
+			}
+			else {
+				printf("Successfully sent the empty message");
+			}
 		}
 		/* We are done */
 		else
 		{
 			/* Close the file */
 			fclose(fp);
+			printf("The file is now closed");
 		}
 	}
 }
@@ -130,10 +193,39 @@ void mainLoop()
 void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 {
 	/* TODO: Detach from shared memory */
-	
+	printf("Going to detach from shared memory");
+
+	if (shmdt(sharedMemPtr) == -1) {
+		perror("There was an error detaching from memory in cleanUp");
+		exit(1);
+	}
+	else {
+		printf("Detached from shared memory");
+	}
+
 	/* TODO: Deallocate the shared memory chunk */
-	
+	printf("Going to deallocate the shared memory chunk");
+	int sharedMemChunk = shmctl(shmid, IPC_RMID, NULL);
+
+	if (sharedMemChunk == -1) {
+		perror("Could not deallocate shared memory chunk");
+		exit(1);
+	}
+	else {
+		printf("Deallocated from shared memory");
+	}
+
 	/* TODO: Deallocate the message queue */
+	printf("Going to deallocate the message queue");
+	msgQ = msgctl(msqid, IPC_RMID, NULL);
+
+	if (msgQ == -1) {
+		perror("Could not deallocate the message queue");
+		exit(1);
+	}
+	else {
+		printf("The message queue was deallocated");
+	}
 }
 
 /**
@@ -145,6 +237,7 @@ void ctrlCSignal(int signal)
 {
 	/* Free system V resources */
 	cleanUp(shmid, msqid, sharedMemPtr);
+	printf("User ended the program");
 }
 
 int main(int argc, char** argv)
@@ -155,7 +248,8 @@ int main(int argc, char** argv)
  	 * queues and shared memory before exiting. You may add the cleaning functionality
  	 * in ctrlCSignal().
  	 */
-				
+	signal(SIGINT, ctrlCSignal);
+			
 	/* Initialize */
 	init(shmid, msqid, sharedMemPtr);
 	
@@ -163,6 +257,9 @@ int main(int argc, char** argv)
 	mainLoop();
 
 	/** TODO: Detach from shared memory segment, and deallocate shared memory and message queue (i.e. call cleanup) **/
+	cleanUp(shmid, msqid, sharedMemPtr);
+
+	printf("Finished");
 		
 	return 0;
 }
