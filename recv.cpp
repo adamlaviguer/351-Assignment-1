@@ -57,14 +57,14 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 
 
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
-	printf("Memory is being allocated\n");
+	printf("Getting the ID of the shared memory segment\n");
 	//int shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
 	if (shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT) == -1) {
-		perror("Could not allocate memory\n");
+		perror("Could not get the ID\n");
 		exit(1);
 	}
 	else {
-		printf("Memory has been allocated successfully\n");
+		printf("Received the ID\n");
 	}
 
 	/* TODO: Attach to the shared memory */
