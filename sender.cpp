@@ -39,7 +39,7 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    may have the same key.
 	 */
 	printf("Generating the key\n");
-	key_t key = ftok("keyfile.txt", 'a'); /*Generate the key*/
+	key_t key = ftok("keyfile.txt", 'A'); /*Generate the key*/
 	if (key == -1) {
 		perror("Could not generate key\n");
 		exit(1);
@@ -61,20 +61,20 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 	}
 
 	/* TODO: Attach to the shared memory */
-  sharedMemPtr = (char*) shmat(shmid, (void*)0, 0);
 	printf("In the process of attaching to shared memory\n");
-	if (sharedMemPtr == (void *)-1) {
-		perror("Could not attach to shared memory\n");
-		exit(1);
-	}
-	else {
+	sharedMemPtr = shmat(shmid, (void *)0, 0);
+	// if (sharedMemPtr == (void *)-1) {
+	// 	perror("Could not attach to shared memory\n");
+	// 	exit(1);
+	// }
+	//else {
 		printf("Attached to shared memory successfully\n");
-	}
+	//}
 
 	/* TODO: Attach to the message queue */
-	int msgid = msgget(key, 0666 | IPC_CREAT); //Creates a message queue
+	//int msgid = msgget(key, 0666 | IPC_CREAT); //Creates a message queue
 	printf("Message queue is being created\n");
-	if (msgid == -1) {
+	if (msgget(key, 0666 | IPC_CREAT) == -1) {
 		perror("Message queue could not be created\n");
 		exit(1);
 	}
