@@ -1,3 +1,6 @@
+//Hammad Qureshi
+//Adam Laviguer
+
 #include <sys/shm.h>
 #include <sys/msg.h>
 #include <signal.h>
@@ -46,7 +49,7 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 
 
 	printf("Generating key\n");
-	key_t key = ftok("keyfile.txt", 'A'); //Generate the key
+	key_t key = ftok("keyfile.txt", 'a'); //Generate the key
 	if (key == -1) {
 		perror("Could not generate key\n");
 		exit(1);
@@ -58,8 +61,8 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
 	printf("Getting the ID of the shared memory segment\n");
-	//int shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
-	if (shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT) == -1) {
+	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666|IPC_CREAT);
+	if (shmid == -1) {
 		perror("Could not get the ID\n");
 		exit(1);
 	}
@@ -69,19 +72,19 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 
 	/* TODO: Attach to the shared memory */
 	printf("In the process of attaching to shared memory\n");
-	sharedMemPtr = shmat(shmid, (void*)0, 0);
-	// if (sharedMemPtr == (void *)-1) {
-	// 	perror("Could not attach to shared memory\n");
-	// 	exit(1);
-	// }
-	//else {
+	sharedMemPtr = shmat(shmid, (void *)0, 0);
+	if (sharedMemPtr == (void *)-1) {
+		perror("Could not attach to shared memory\n");
+		exit(1);
+	}
+	else {
 		printf("Attached to shared memory successfully\n");
-	//}
+	}
 
 	/* TODO: Create a message queue */
-	//int msgid = msgget(key, 0666|IPC_CREAT); //Creates a message queue
 	printf("Message queue is being created\n");
-	if (msgget(key, 0666|IPC_CREAT) == -1) {
+	msqid = msgget(key, 0666|IPC_CREAT); //Creates a message queue
+	if (msqid == -1) {
 		perror("Message queue could not be created\n");
 		exit(1);
 	}
@@ -133,8 +136,7 @@ void mainLoop()
 
 	while(msgSize != 0)
 	{
-		printf("A new message is currently being read\n");
-		//int recieveMsg = msgrcv(msqid, &recMsge, sizeof(recMsge), SENDER_DATA_TYPE, 0);
+		//int receiveMsg = msgrcv(msqid, &recMsge, sizeof(recMsge), SENDER_DATA_TYPE, 0);
 		if (msgrcv(msqid, &recMsge, sizeof(recMsge), SENDER_DATA_TYPE, 0) == -1) {
 			perror("There was an error retrieving the message\n");
 			exit(1);
@@ -152,13 +154,14 @@ void mainLoop()
 			if(fwrite(sharedMemPtr, sizeof(char), msgSize, fp) < 0)
 			{
 				perror("fwrite\n");
+				exit(1);
 			}
 
 			/* TODO: Tell the sender that we are ready for the next file chunk.
  			 * I.e. send a message of type RECV_DONE_TYPE (the value of size field
  			 * does not matter in this case).
  			 */
-			printf("Prepared to recieve the next chunk\n");
+			printf("Prepared to receive the next chunk\n");
 
 			sendMsge.mtype = RECV_DONE_TYPE;
 			sendMsge.size = 0;
@@ -167,6 +170,7 @@ void mainLoop()
 			int messageSnd = msgsnd(msqid, &sendMsge, 0, 0);
 			if (messageSnd == -1) {
 				perror("There was an error in sending the empty message\n");
+				exit(1);
 			}
 			else {
 				printf("Successfully sent the empty message\n");
