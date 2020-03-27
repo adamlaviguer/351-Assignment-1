@@ -13,5 +13,8 @@ recv.o: recv.cpp
 	g++ -c recv.cpp
 
 clean:
-	rm *.o sender receiver 
+	rm *.o sender receiver
+
+tar:
+     tar cvf assignment1-Hammad_Qureshi_and_Adam_Laviguer.tar *.cpp *.h makefile 
 
