@@ -14,8 +14,11 @@ Contribution:
 	
 ### CPSC 351, Section 03
 
-## Project Environment: Tuffix OS
-## Project Language: C++
+## Project Environment: 
+Tuffix OS
+
+## Project Language: 
+C++
 
 ## Execution Instructions:
 
