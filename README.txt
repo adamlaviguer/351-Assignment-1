@@ -2,7 +2,7 @@
 ================
 
 Implement an application which synchronously transfers files between two
-processes.
+processes. The extra credit portion was not implented for our project.
 
 Project by
 ----------
