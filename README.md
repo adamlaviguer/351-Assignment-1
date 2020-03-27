@@ -1,7 +1,7 @@
 # 351-Assignment-1
 
 Implement an application which synchronously transfers files between 
-two processes.
+two processes. The extra credit portion was not implented for our project.
 
 ## Project by 
 ### Adam Laviguer, adamlaviguer@csu.fullerton.edu
